@@ -18,44 +18,30 @@ Simulation::Simulation(Parameters const &par) :
     ,uniform{0.0,1.0} // initialize the uniform distribution
     ,data_file{par.base_name.c_str()} // initialize the data file by giving it a name
     ,data_file_network{par.base_name_matrix_file.c_str()} // initialize network data file
-                                                          // by giving it a name
+    ,nodes(par.n_nodes,Individual(par)) // initialize all the individuals (nodes) of the network
     ,par{par} // initialize the parameter data member with the constructor argument
-    ,metapop{par.n_patches, Patch(par)} // initialize a meta population each with n1 individuals of species 1 and n2 individuals of species 2
- 
 {
-    // initialize patch environments
-    //
-    // count the number of patches in environmental state 2
-    // (number of patches in environmental state 1 = par.n_patches - n_patches_2)
-   int n_patches_2 = 0;
+    // initialize the 2d vector with edges between nodes
+    initialize_edges();
 
-    // overall frequency of environment 2 is 
-    // switch_rate[1->2]/(switch_rate[1->2] + switch_rate[2->1])
-    double prob_envt2 = par.switch_rate[1]/(par.switch_rate[1] + 
-            par.switch_rate[0]);
+} // end constructor
 
-    
-    // set the environment for each patch
-    // initialize the network for each patch
-    // as a random network
-    for (int patch_idx = 0; patch_idx < metapop.size(); ++patch_idx)
-   {
-        // randomly set the environment as a function of the probability
-        // of getting environment 2. The value can either be true (envt2)
-        // or false (envt1)
-        metapop[patch_idx].envt2 = uniform(rng_r) < prob_envt2;
+// initialize the matrix specifying all the connections
+void initialize_edges()
+{
+    for (int row_i = 0; row_i < par.n_nodes; ++row_i)
+    {
+        // initialize a single row
+        std::vector < bool > row;
 
-        n_patches_2 += metapop[patch_idx].envt2;
-
-        // create a random network in each patch
-        metapop[patch_idx].make_random_network(
-                par.p_network_init
-                ,rng_r);
-
-        W_global_total += metapop[patch_idx].calculate_W();
+        for (int col_j = 0; col_j < par.n_nodes; ++col_j)
+        {
+            // according to initial connection 
+            // probability, build a network
+            row.push_back(uniform(rng_r) < par.p_connect_init);
+        }
     }
-
-} // end IBM_Mutualism constructor
+} // end initialize_edges()
 
 // run the simulation
 void Simulation::run()
@@ -68,53 +54,7 @@ void Simulation::run()
     // each and every time step
     for (time_step = 0; time_step < par.max_time_steps; ++time_step)
     {
-        // total rate of environmental change
-        // is:
-        // number of envt 1 patches * switch_rate[0]
-        // number of envt 2 patches * switch_rate[1]
-        double rate_of_change[2] = {
-            ((int)metapop.size() - n_patches_2) * par.switch_rate[0] 
-            ,n_patches_2 * par.switch_rate[1]
-        };
-
-        // the individual death rate is set 1 (i.e., a standard rate
-        // relative to all other rates of things happening), which means
-        // that the overall rate at which some dies 
-        // in the population is simply N
-        double death_rate = metapop.size() * (par.n[female] + par.n[male]);
-
-        // make a probability distribution of 
-        // the different events
-        std::discrete_distribution<int> event_chooser{
-            rate_of_change[0]
-            ,rate_of_change[1]
-            ,death_rate};
-
-        // sample from the event chooser
-        // and then perform actions according to what
-        // was sampled
-        switch(event_chooser(rng_r))
-        {
-            case 0:
-                environmental_change(0); // a patch in envtal state 1 changes its envt
-                break;
-            case 1:
-                environmental_change(1); // a patch in envtal state 2 changes its envt
-                break;
-            case 2:
-                death_birth(); // a random individual dies and is replaced
-                break;
-            default:
-                throw std::range_error("Something is going wrong in the event chooser. There are more event options than currently accommodated for.");
-                break;
-        } // end switch
-   
-        // output stats to file every n time steps
-        if (time_step % par.data_output_interval == 0)
-        {
-            std::cout << "time step:" << time_step << std::endl;
-            write_data();
-        }
+        :
     } // end for time_step
 
     // write the networks to a file

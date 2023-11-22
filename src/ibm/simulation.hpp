@@ -5,8 +5,8 @@
 #include <fstream>
 #include <random>
 #include <vector>
+#include "patch.hpp"
 #include "parameters.hpp"
-#include "individual.hpp"
 
 // Simulation class represents the heart of the code
 // with functions governing the life cycle 
@@ -43,31 +43,15 @@ class Simulation
         // uniform distribution to compare against probabilities
         std::uniform_real_distribution<double> uniform;
 
-        // uniform distribution to sample a random patch
-        std::uniform_int_distribution<int> patch_sampler;
-        
         // parameter object
         // containing all the parameters for this run
         Parameters par;
-        
-        // for stats purposes collect
-        // the mean survival probability and other things
-        int n_patches_2 = 0;
 
-        // the metapopulation consisting of pods, here called patches
-        std::vector < Patch > metapop;
+        // nodes comprising individuals in the network
+        std::vector <Individual> nodes;
 
-        // the total fitness sum over all patches and individuals
-        double W_global_total = 0.0;
-
-        // vector to save stats on the average repertoire size
-        std::vector <double> latest_repertoire_sizes;
-
-        // vector to save stats on the average numbers of neighbours with trait t
-        std::vector <double> latest_pi_ts;
-        
-        // vector to save stats on the average numbers of neighbours with trait t
-        std::vector <double> latest_pi_ts_var;
+        // boolean array that comprises the actual networka
+        std::vector < std::vector < bool > > edges;
 
     public:
         // the simulation constructor - building a simulation object
