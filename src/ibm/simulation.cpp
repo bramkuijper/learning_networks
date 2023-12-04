@@ -21,6 +21,8 @@ Simulation::Simulation(Parameters const &par) :
     ,nodes(par.n_nodes,Individual(par)) // initialize all the individuals (nodes) of the network
     ,par{par} // initialize the parameter data member with the constructor argument
 {
+    initialize_payoff_matrix();
+
     // initialize the 2d vector with edges between nodes
     initialize_edges();
 
@@ -29,6 +31,7 @@ Simulation::Simulation(Parameters const &par) :
 // initialize the matrix specifying all the connections
 void initialize_edges()
 {
+    // loop through all the rows of the matrix containing the edges
     for (int row_i = 0; row_i < par.n_nodes; ++row_i)
     {
         // initialize a single row
@@ -40,8 +43,47 @@ void initialize_edges()
             // probability, build a network
             row.push_back(uniform(rng_r) < par.p_connect_init);
         }
+
+        edges.push_back(row);
     }
 } // end initialize_edges()
+
+// play game and then update payoffs
+void Simulation::play_game(unsigned int focal, unsigned int partner)
+{
+
+
+}
+
+void Simulation::interact()
+{
+    std::vector<int> indices_partners;
+    
+    // go over all individuals, have them interact with their partner
+    for (unsigned int row_i = 0; row_i < par.n_nodes; ++row_i)
+    {
+        indices_partners.clear();
+
+        for (unsigned int col_j = 0; col_j < par.n_nodes; ++col_j)
+        {
+            if (edges[row_i][col_j])
+            {
+                indices_partners.push_back(col_j);
+            }
+        }
+
+        if (indices_partners.size() > 0)
+        {
+            // now choose random partner
+            std::uniform_int_distribution<unsigned int> 
+                partner_sampler(0, indices_partners.size() - 1);
+
+            unsigned int partner_id{partner_sampler(rng_r)};
+        
+            play_game(row_i, partner_id);
+        }
+    }
+} // end Simulation::interact()
 
 // run the simulation
 void Simulation::run()
@@ -49,12 +91,19 @@ void Simulation::run()
     // write the headers to the output file
     // so that all columns have names in the output file
     write_data_headers();
+            
 
     // we loop over all the time steps and perform a whole life cycle
-    // each and every time step
     for (time_step = 0; time_step < par.max_time_steps; ++time_step)
     {
-        :
+        interact();
+
+
+        }
+
+        // 1. first interact
+        // 2. after interacting collect a payoff
+        // 3. then based on the payoff, I will 
     } // end for time_step
 
     // write the networks to a file
